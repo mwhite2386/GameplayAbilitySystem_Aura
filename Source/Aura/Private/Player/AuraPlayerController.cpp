@@ -4,10 +4,71 @@
 #include "Player/AuraPlayerController.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
+#include "Interaction/IInteractable.h"
 
 AAuraPlayerController::AAuraPlayerController()
 {
 	bReplicates = true;
+}
+
+void AAuraPlayerController::PlayerTick(float DeltaTime)
+{
+	Super::PlayerTick(DeltaTime);
+	CursorTrace();
+
+}
+
+void AAuraPlayerController::CursorTrace()
+{
+	FHitResult CursorHit;
+	GetHitResultUnderCursor(ECC_Visibility, false, CursorHit);
+	if (!CursorHit.bBlockingHit) return;
+
+	LastActor = ThisActor;
+	ThisActor = CursorHit.GetActor();
+
+	
+	/**
+	 *Line trace from cursor. There are several scenarios:
+	 *  A. LastActor is null and ThisActor is null
+	 *     - Do Nothing
+	 *  B. LastActor is null and ThisActor is valid
+	 *     - Hover on the actor for the first time.
+	 *     - Hightlight ThisActor
+	 *  C. LastActor is valid and ThisActor is null
+	 *     - unhighlight the LastActor
+	 *  D. Both actors are valid, but LastActor != ThisActor
+	 *     - Unhighlight LastActor, and HIghlight ThisActor
+	 *  E. Both actors are valid, and LastActor == ThisActor
+	 *     - Do Nothing
+	 */
+
+	if (LastActor == nullptr && ThisActor == nullptr)
+	{
+		// Do Nothing
+		return;
+	}
+	if (LastActor == nullptr && ThisActor != nullptr)
+	{
+		// Hover on the actor for the first time.
+		// Highlight ThisActor
+		ThisActor->HighlightActor();
+		return;
+	}
+	if (LastActor != nullptr && ThisActor == nullptr)
+	{
+		// Unhighlight the LastActor
+		LastActor->UnHighlightActor();
+		return;
+	}
+	if (LastActor != nullptr && ThisActor != nullptr && LastActor != ThisActor)
+	{
+		// Unhighlight LastActor, and Highlight ThisActor
+		LastActor->UnHighlightActor();
+		ThisActor->HighlightActor();
+		return;
+	}
+	
 }
 
 void AAuraPlayerController::BeginPlay()
